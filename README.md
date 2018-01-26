@@ -1,5 +1,5 @@
 # zwwC
-This project includes a simple compiler.
+This project constructs a simple compiler. 
 
 ## Update Schedule
 * Week 3
@@ -40,3 +40,61 @@ This project includes a simple compiler.
 *  Week 8
 
 	Using LLVM to generate .o file
+
+## Lexical Analysis
+
+	To develop a new language, the first thing we should do is to define keywords and all the operators in the form of regular expression.
+
+	Letter = [a-zA-Z]
+
+	Num = [0-9]
+
+	To make the language simple, we can only store two types of data sturcture currently.  Number will be stored as double.
+
+	Variable = [Letter|_(Letter|Num)*]
+
+	String = ["(Letter|Num)*"]
+
+	Number = [0-9(Num)*]
+
+	And I define a lot of keywords.  These keywords are reserved and cannot be used as name of variables.  More keywords may be defined in the future's work to expand the compiler's function.
+
+	Keywords = {for, if, else, let, put, get, Begin, End, +, -, *, /}
+
+## Grammar definition
+
+	I define some basic grammar of this language, where . represents an empty:
+
+		Program -> Begin State-List End
+
+		State-List -> State; State-List | .
+
+		State_List -> If State-List EExp
+
+		EExp -> Else State-List | .
+
+		State-List -> For {State-List}
+
+		State -> Assign | Func
+
+		Assign -> let ID = Exp
+
+		Exp -> Term Exp'
+
+		Exp' -> Add Term Exp' | .
+
+		Term -> F Term'
+
+		Term' -> Mul F Term' | .
+
+		F -> (Exp) | ID | Number
+
+		Add -> + | -
+
+		Mul -> * | /
+
+		Func -> put(Put)
+	
+		Put -> ID | Number | String
+
+		Func -> get(ID) 
