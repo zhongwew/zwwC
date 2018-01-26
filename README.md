@@ -59,7 +59,9 @@ To make the language simple, we can only store two types of data sturcture curre
 
 And I define a lot of keywords.  These keywords are reserved and cannot be used as name of variables.  More keywords may be defined in the future's work to expand the compiler's function.
 
-	Keywords = {for, if, else, let, put, get, Begin, End, +, -, *, /}
+	Keywords = {for, if, else, let, put, get, Begin, End}
+
+	Operator = {+, -, *, /, =, ==, !=, >, <, >=, <=, ||, &&,}
 
 ## Grammar definition
 
