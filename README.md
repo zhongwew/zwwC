@@ -57,29 +57,76 @@ To make the language simple, we can only store two types of data sturcture curre
 
 	Number = [0-9(Num)*]
 
-And I define a lot of keywords.  These keywords are reserved and cannot be used as name of variables.  More keywords may be defined in the future's work to expand the compiler's function.
 
-	Keywords = {for, if, else, let, put, get, Begin, End}
+And I define a lot of keywords.  These keywords are reserved and cannot be used as name of variables. 
 
-	Operator = {+, -, *, /, =, ==, !=, >, <, >=, <=, ||, &&,}
+	Keywords = {int, bool, main, for, while, if, else, let, put, get, return}
+
+	boolean = {true, false}
+
+Operators are pre-divided into groups by its priority:(name pattern: priority_type_op)
+
+	self_op = {++, --}
+
+	H_logic_op = {&&}
+
+	L_logic_op = {||}
+
+	H_math_op = {* | / | %}
+
+	L_math_op = {+ , -}
+
+	judge_op = {== , >=, <=, =, !=, <,>}
 
 ## Grammar definition
 
-I define some basic grammar of this language, where . represents an empty:
+I define some basic grammar of this language, where . represents an empty. 
 
-		Program -> Begin State-List End
+	The entrance of program is 
+
+		Program -> State-List
+
+	The grammer of statement:
 
 		State-List -> State; State-List | .
 
-		State_List -> If State-List EExp
+		State -> Declare; | Assign; | Func; 
 
-		EExp -> Else State-List | .
+		State -> If(Bool) { State-List} EExp
 
-		State-List -> For {State-List}
+		EExp -> else {State-List} | .
 
-		State -> Assign | Func
+		State -> for(Assign; Bool; Assign) {State-List}
 
-		Assign -> let ID = Exp
+		State -> while(Bool){State-List}
+
+		State -> def ID (IDList) {State-List}
+
+		State -> return ID;
+
+	Assignment and Declare grammer:
+
+		Assign -> Array Assign' | self_op ID
+
+		Assign' -> = Bool | self_op
+
+		Declare -> Type Array Assign'| .
+
+		Array -> ID | ID[Number] | ID[*ID] 
+	
+	Logic operation and math calculation, ordered by priority:
+
+		Bool -> HRel Bool'
+
+		Bool' -> L_logic_op HRel Bool'| .
+
+		HRel -> Rel HRel'
+
+		HRel -> H_logic_op Rel HRel' | .
+
+		Rel -> Exp Rel'
+
+		Rel' -> judge_op Exp Rel' | .  
 
 		Exp -> Term Exp'
 
@@ -89,14 +136,12 @@ I define some basic grammar of this language, where . represents an empty:
 
 		Term' -> Mul F Term' | .
 
-		F -> (Exp) | ID | Number
+		F -> (Bool) | !(Bool) | ID | Number | boolean
 
-		Add -> + | -
-
-		Mul -> * | /
+Some reset function:
 
 		Func -> put(Put)
-	
-		Put -> ID | Number | String
 
 		Func -> get(ID) 
+
+		Put -> ID | Number | String
