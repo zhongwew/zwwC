@@ -51,7 +51,7 @@ To develop a new language, the first thing we should do is to define keywords an
 
 To make the language simple, we can only store two types of data sturcture currently.  Number will be stored as double.
 
-	Variable = [Letter|_(Letter|Num)*]
+	ID = [Letter|_(Letter|Num)*]
 
 	String = ["(Letter|Num)*"]
 
@@ -60,7 +60,7 @@ To make the language simple, we can only store two types of data sturcture curre
 
 And I define a lot of keywords.  These keywords are reserved and cannot be used as name of variables. 
 
-	Keywords = {int, bool, main, for, while, if, else, let, put, get, return}
+	Keywords = {int, bool, main, for, while, if, else, put, get, return}
 
 	boolean = {true, false}
 
