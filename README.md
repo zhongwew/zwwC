@@ -138,10 +138,3 @@ I define some basic grammar of this language, where . represents an empty.
 
 		F -> (Bool) | !(Bool) | ID | Number | boolean
 
-Some reset function:
-
-		Func -> put(Put)
-
-		Func -> get(ID) 
-
-		Put -> ID | Number | String
