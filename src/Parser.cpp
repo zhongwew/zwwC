@@ -37,6 +37,9 @@ ExprAST* Parser::parseState(){
         case T_FOR:
             result = parseFor();
             break;
+        case T_DEF:
+            result = parseDef();
+            break;
         case T_RETURN:
             result = parseReturn();
             match(";");
@@ -144,6 +147,30 @@ ExprAST* Parser::parseDeclare(){
     return result;
 }
 
+//Def func_name(args) block
+ExprAST* Parser::parseDef(){
+    FunctionAST* result = NULL;
+    std::vector<ExprAST*> args;
+    toNext(); //skip the def
+    std::string name = getToken()->getvalue();
+    toNext();
+    match("(");
+    while(1){
+        ExprAST* newarg = parseDeclare();
+        args.push_back(newarg);
+        if(getToken->getvalue() == ")") break;
+        match(",");
+    }
+    match(")");
+    result = new ProgramAST(name,args);
+    match("{");
+    ExprAST* blo = parseBlock();
+    match("}");
+    ExprAST* res = new FunctionAST(result,blo);
+    return res;
+}
+
+//implement the block statements
 ExprAST* Parser::parseBlock(){
     match("{");
     std::vector<ExprAST*> block;
@@ -156,8 +183,18 @@ ExprAST* Parser::parseBlock(){
 }
 
 //Array->ID|ID[number]|ID[ID]
-VariableAST* Parser::parseArray(){
-    VariableAST * result=NULL;
+ExprAST* Parser::parseArray(){
+    ExprAST * result=NULL;
+    toNext();//skip the ID
+    if (this->getToken()->getType() == T_L_SBRAC) {
+        toNext();//skio the [
+        if (this->getToken()->getType() == T_ID) {
+            result = parseVariable();
+        }
+        else{
+            result = parseState();
+        }
+    }
     return result;
 }
 

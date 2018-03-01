@@ -15,6 +15,7 @@
 class Parser{
     std::vector<Token*> tokens;
     int pos;  //to indicate the position of current Token
+    int lineNum; //used to record line number
 public:
     Parser(std::vector<Token*> t){
         this->tokens = t;
@@ -28,7 +29,7 @@ public:
     }
     void match(std::string value){
         if(value != getToken()->getvalue()){
-            std::cout << "match error at: "<<value<<std::endl;
+            std::cout << "match error at: "<<pos+1<<" value: "<<getToken()->getvalue()<<std::endl;
             exit(0);
         }
         toNext();
@@ -44,7 +45,7 @@ public:
     ExprAST* parseAssign();
     ExprAST* parseDeclare();
     ExprAST* parseBlock();
-    VariableAST* parseArray();
+    ExprAST* parseArray();
     //parse different kinds of statements
     ExprAST* parseIF();
     ExprAST* parseWhile();

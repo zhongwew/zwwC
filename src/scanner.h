@@ -14,7 +14,7 @@
 #define scanner_h
 
 //tag of reserved keywords
-const int T_INT = 1, T_BOOL = 2, T_MAIN = 3, T_FOR = 4, T_IF = 5, T_ELSE = 6, T_RETURN = 7,T_TERMINATE = 8,T_WHILE = 9;
+const int T_INT = 1, T_BOOL = 2, T_MAIN = 3, T_FOR = 4, T_IF = 5, T_ELSE = 6, T_RETURN = 7,T_TERMINATE = 8,T_WHILE = 9,T_DEF=10;
 
 //tag of operators
 const int T_SELFOP = 30, T_HLOGICOP = 31, T_LLOGICOP = 32, T_HMATHOP = 33, T_LMATHOP = 34, T_JUDGEOP = 35, T_EQUAL = 36, T_L_SBRAC = 37, T_R_SBRAC = 38, T_L_BBRAC = 39,T_R_BBRAC = 40,T_L_RBRAC = 41,T_R_RBRAC = 42;
@@ -68,6 +68,7 @@ public:
         wordsTable.push_back(new Token(T_MAIN, "main"));
         wordsTable.push_back(new Token(T_RETURN, "return"));
         wordsTable.push_back(new Token(T_ELSE, "else"));
+        wordsTable.push_back(new Token(T_DEF, "def"));
     }
     void scan(std::ifstream & infile);
     //function to scan through infile

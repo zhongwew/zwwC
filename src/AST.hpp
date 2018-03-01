@@ -9,12 +9,24 @@
 #ifndef AST_hpp
 #define AST_hpp
 
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
 #include <stdio.h>
 #include <string>
 #include <vector>
 class ExprAST{
 public:
     virtual ~ExprAST(){}
+    virtual Value* codegen() = 0;
 };
 
 class ProgramAST: public ExprAST{
@@ -53,12 +65,21 @@ public:
 };
 
 //the prototype of function prototype:  funcname(args)
-class protoAST: public ExprAST{
+class ProtoAST: public ExprAST{
     std::string name;
     std::vector<ExprAST*> args; //store parameters of function
 public:
-    
+    ProtoAST(std::string n,std::vector<ExprAST*> a):name(n),args(a){}
 };
+
+class FunctionAST: public ExprAST{
+    ProtoAST * proto;
+    BlockAST * block;
+public:
+    FunctionAST(ProtoAST* p, BlockAST* b):proto(p),block(b){}
+
+};
+
 //AST to parse the function call
 class CallfuncAST: public ExprAST{
     std::string callname; //the funciton name
