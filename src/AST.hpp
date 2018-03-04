@@ -48,12 +48,14 @@ class NumberAST: public ExprAST{
     int value;
 public:
     NumberAST(const int v):value(v){}
+    Value* codegen() override;
 };
 
 class VariableAST: public ExprAST{
     std::string name;
 public:
     VariableAST(const std::string & n):name(n){}
+    Value* codegen() override;
 };
 
 //AST to parse the operation between two variables
@@ -62,6 +64,7 @@ class BinopAST: public ExprAST{
     ExprAST* lva,* rva; //store two number
 public:
     BinopAST(std::string o,ExprAST* l,ExprAST* r):op(o),lva(l),rva(r){}
+    Value* codegen() override;
 };
 
 //the prototype of function prototype:  funcname(args)
@@ -70,6 +73,10 @@ class ProtoAST: public ExprAST{
     std::vector<ExprAST*> args; //store parameters of function
 public:
     ProtoAST(std::string n,std::vector<ExprAST*> a):name(n),args(a){}
+    std::string getName(){
+        return name;
+    }
+    Function* codegen();
 };
 
 class FunctionAST: public ExprAST{
@@ -77,7 +84,7 @@ class FunctionAST: public ExprAST{
     BlockAST * block;
 public:
     FunctionAST(ProtoAST* p, BlockAST* b):proto(p),block(b){}
-
+    Function* codegen();
 };
 
 //AST to parse the function call
@@ -86,6 +93,7 @@ class CallfuncAST: public ExprAST{
     std::vector<ExprAST*> args; //define the parameters of function
 public:
     CallfuncAST(const std::string cal, std::vector<ExprAST*> &ar):callname(cal),args(ar){}
+    Value* codegen() override;
 };
 
 //AST to store while statement
