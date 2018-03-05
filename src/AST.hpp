@@ -33,6 +33,7 @@ class ProgramAST: public ExprAST{
     std::vector<ExprAST*> programStmts;
 public:
     ProgramAST(std::vector<ExprAST*> stmts):programStmts(stmts){}
+    Value* codegen() override;
 };
 
 class BlockAST: public ExprAST{
@@ -42,6 +43,7 @@ public:
     void addStmt(ExprAST* newast){
         statements.push_back(newast);
     }
+    Value* codegen() override;
 };
 
 class NumberAST: public ExprAST{
@@ -56,6 +58,9 @@ class VariableAST: public ExprAST{
 public:
     VariableAST(const std::string & n):name(n){}
     Value* codegen() override;
+    std::string getName(){
+        return name;
+    }
 };
 
 //AST to parse the operation between two variables
@@ -70,9 +75,9 @@ public:
 //the prototype of function prototype:  funcname(args)
 class ProtoAST: public ExprAST{
     std::string name;
-    std::vector<ExprAST*> args; //store parameters of function
+    std::vector<std::string> args; //store parameters of function
 public:
-    ProtoAST(std::string n,std::vector<ExprAST*> a):name(n),args(a){}
+    ProtoAST(std::string n,std::vector<std::string> a):name(n),args(a){}
     std::string getName(){
         return name;
     }
@@ -103,6 +108,7 @@ class WhileAST: public ExprAST{
     ExprAST * body;
 public:
     WhileAST(ExprAST* c, ExprAST*b):cond(c),body(b){}
+    Value* codegen() override;
 };
 
 //AST to store if statement
@@ -113,6 +119,7 @@ class IfAST: public ExprAST{
     ExprAST * elsebody;
 public:
     IfAST(ExprAST* c,ExprAST* b,ExprAST* e):cond(c),body(b),elsebody(e){}
+    Value* codegen() override;
 };
 
 //AST to store for statement
@@ -123,6 +130,7 @@ class ForcallAST: public ExprAST{
     ExprAST * body;
 public:
     ForcallAST(ExprAST*init, ExprAST*c, ExprAST* it,ExprAST*bo):initVar(init),cond(c),Iterator(it),body(bo){}
+    Value* codegen() override;
 };
 
 //AST to store assignment
@@ -140,6 +148,9 @@ class DeclareAST: public ExprAST{
 public:
     DeclareAST(VariableAST*v,ExprAST* vl):var(v),value(vl){}
     DeclareAST(VariableAST*v):var(v){}
+    std::string getVarname(){
+        return var->getName();
+    }
 };
 
 

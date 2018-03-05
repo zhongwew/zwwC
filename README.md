@@ -60,7 +60,7 @@ To make the language simple, we can only store two types of data sturcture curre
 
 And I define a lot of keywords.  These keywords are reserved and cannot be used as name of variables. 
 
-	Keywords = {int, bool, main, for, while, if, else, put, get, return}
+	Keywords = {set, main, for, while, if, else, put, get, return}
 
 	boolean = {true, false}
 
@@ -88,9 +88,9 @@ I define some basic grammar of this language, where . represents an empty.
 
 	The grammer of statement:
 
-		State-List -> State; State-List | .
+		State-List -> State State-List | .
 
-		State -> Declare; | Assign; | Func; 
+		State -> Declare | Assign | Func 
 
 		State -> If(Bool) { State-List} EExp
 
@@ -101,6 +101,8 @@ I define some basic grammar of this language, where . represents an empty.
 		State -> while(Bool){State-List}
 
 		State -> def ID (IDList) {State-List}
+		
+		State-> {StateState-List}
 
 		State -> return ID;
 
@@ -110,7 +112,7 @@ I define some basic grammar of this language, where . represents an empty.
 
 		Assign' -> = Bool | self_op
 
-		Declare -> Type Array Assign'| .
+		Declare -> set Array Assign'| .
 
 		Array -> ID | ID[Number] | ID[*ID] 
 	

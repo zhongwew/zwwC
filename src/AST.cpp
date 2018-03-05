@@ -103,7 +103,7 @@ Function* ProtoAST::codegen(){
     //set name for args
     unsigned int index = 0;
     for(auto & arg: f->args())
-    //todo this is not correct
+    //this is not correct
         arg.setName(args[index++]);
     return f;
 }
@@ -134,4 +134,72 @@ Function* FunctionAST::codegen(){
     //for the error case
     thefunc->eraseFromParent();
     return nullptr;
+}
+
+Value* ProgramAST::codegen(){
+
+}
+
+Value* BlockAST::codegen(){
+
+}
+
+Value* IfAST::codegen(){
+    Value* condv = cond->codegen();
+    if(!condv)
+        return nullptr;
+    //convert condv into boolean by compare it with 0.0
+    condv = Builder.CreateFCmpONE(condv,ConstantFP::get(TheContext,APFloat(0.0)),"ifcond");
+    //get the current fucntion that is being built
+    Function * thefunc = Builder.GetInsertBlock()->getParent();
+    //create blocks for the other cases
+    BasicBlock * thenb = BasicBlock::Create(TheContext,"then",thefunc);
+    BasicBlock * elsebb = BasicBlock::Create(TheContext,"else");
+    BasicBlock * Mergeb = BasicBlock::Create(TheContext,"ifcont");
+
+    Builder.CreateCondBr(condv,thenb,elsebb);
+    //emit then value
+    Builder.SetInsertPoint(thenb);
+    Value* thenv = body->codegen();
+    if(!thenv)
+        return nullptr;
+    Builder.CreateBr(Mergeb);
+    //todo what is phi? phi is a function choose the specific block for the control flow
+    thenb = Builder.GetInsertBlock();
+    //emit else block, similar with above
+    thefunc->getBasicBlockList().push_back(elsebb);
+    Builder.SetInsertPoint(elsebb);
+    Value* elsev = elsebody->codegen();
+    if(!elsev)
+        return nullptr;
+    Builder.CreateBr(Mergeb);
+    elsebb = Builder.GetInsertBlock();
+    //emit the merge block
+    thefunc->getBasicBlockList().push_back(Mergeb);
+    Builder.SetInsertPoint(Mergeb);
+    PHINode * pn = Builder.CreatePHI(Type::getDoubleTy(TheContext),2,"iftmp");
+    pn->addIncoming(thenv,thenb);
+    pn->addIncoming(elsev,elsebb);
+    return pn;
+}
+
+Value* ForcallAST::codegen(){
+    //initialize variable code generation
+    Value * initv = initVar->codegen();
+    if(!initv)
+        return nullptr;
+    //make new basic block for loop header
+    Function* thefunc = Builder.GetInsertBlock()->getParent();
+    BasicBlock *preheaderbb = Builder.GetInsertBlock();
+    BasicBlock * loopbb = BasicBlock::Create(TheContext,"loop",thefunc);
+    //insert an explicit fall 
+    Builder.CreateBr(loopbb);
+    //start insertion in loopbb
+    Builder.SetInsertPoint(loopbb);
+    //start the phi node with an entry for start
+    //todo incorrect
+    PHINode * var = Builder.CreatePHI(Type::getDoubleTy(TheContext),2,initVar->getVarname().c_str());
+    var->addIncoming(initv,preheaderbb);
+    //within the loop save the old value and use new value to cover it 
+    Value * oldv = NamedValues[var]
 }

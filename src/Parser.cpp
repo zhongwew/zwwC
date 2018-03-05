@@ -47,14 +47,14 @@ ExprAST* Parser::parseState(){
         case T_L_BBRAC:
             result = parseBlock();
             break;
-        case T_INT:
+        case T_SET:
             result = parseDeclare();
             match(";");
             break;
-        case T_BOOL:
-            result = parseDeclare();
-            match(";");
-            break;
+        // case T_BOOL:
+        //     result = parseDeclare();
+        //     match(";");
+        //     break;
         case T_ID:
             result = parseAssign();
             match(";");
@@ -133,7 +133,7 @@ ExprAST* Parser::parseAssign(){
 ExprAST* Parser::parseDeclare(){
     std::cout<<"parsing declare"<<std::endl;
     ExprAST * result;
-    toNext(); //skip the type identifier
+    toNext(); //skip the 'set' 
     VariableAST * var = parseVariable();
     if (getToken()->getType() == T_EQUAL) {
         match("=");
@@ -147,7 +147,7 @@ ExprAST* Parser::parseDeclare(){
     return result;
 }
 
-//Def func_name(args) block
+//Def func_name(x,y) block
 ExprAST* Parser::parseDef(){
     FunctionAST* result = NULL;
     std::vector<ExprAST*> args;
@@ -156,7 +156,7 @@ ExprAST* Parser::parseDef(){
     toNext();
     match("(");
     while(1){
-        ExprAST* newarg = parseDeclare();
+        std::string newarg = getToken()->getvalue();
         args.push_back(newarg);
         if(getToken->getvalue() == ")") break;
         match(",");
