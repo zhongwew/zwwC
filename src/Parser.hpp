@@ -10,7 +10,7 @@
 #define Parser_hpp
 
 #include <stdio.h>
-#include "Scanner.h"
+#include "Scanner.hpp"
 #include "AST.hpp"
 class Parser{
     std::vector<Token*> tokens;
