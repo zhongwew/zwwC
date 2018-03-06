@@ -11,31 +11,31 @@
 static LLVMContext TheContext; 
 static IRBuilder<> Builder(TheContext); //help to generate instructions
 static std::unique_ptr<Module> TheModule; //contains funcitons and global values
-static std::map<std::string, Value *> NamedValues; //a symbol table to track
+static std::map<std::string, llvm::Value *> NamedValues; //a symbol table to track
 
 std::unique_ptr<ExprAST> LogError(const char *Str) {
   fprintf(stderr, "Error: %s\n", Str);
   return nullptr;
 }
 
-Value *LogErrorV(const char *Str) {
+llvm::Value *LogErrorV(const char *Str) {
   LogError(Str);
   return nullptr;
 }
 
-Value* VariableAST::codegen(){
+llvm::Value* VariableAST::codegen(){
     Value * v = NamedValues[name]; //check if variable has been define in the table
     if(!v) LogErrorV("unknown variable name");
     return v;
 }
 
-Value* NumberAST::codegen(){
+llvm::Value* NumberAST::codegen(){
     return ConstantFP::get(TheContext,APFloat(this->getvalue())); //default to be float type
 }
 
-Value* BinopAST::codegen(){
-   Value* lv = lva->codegen();
-   Value* rv = rva->codegen();
+llvm::Value* BinopAST::codegen(){
+   llvm::Value* lv = lva->codegen();
+   llvm::Value* rv = rva->codegen();
    if(!lv || !rv) return nullptr;
    //different operators
    if(op == "+") 
@@ -76,15 +76,15 @@ Value* BinopAST::codegen(){
         return;
 }
 
-Value* CallfuncAST::codegen(){
+llvm::Value* CallfuncAST::codegen(){
     //look up function name in module first
-    Function * callfunc = TheModule->getFunction(callname);
+    llvm::Function * callfunc = TheModule->getFunction(callname);
     if(!callfunc)
         return LogErrorV("Unknown fucntion called");
     //check if arg size is valid
     if(callfunc->arg_size() != args.size())
         return LogErrorV("invalid parameters");
-    std::vector<Value*> argV;
+    std::vector<llvm::Value*> argV;
     for(unsigned int i = 0, e = args.size();i<e;i++){
         argv.push_back(args[i]->codegen());
         if(!argV.back())
@@ -93,7 +93,7 @@ Value* CallfuncAST::codegen(){
     return Builder.CreateCall(callfunc,argV,"calltmp");
 }
 
-Function* ProtoAST::codegen(){
+llvm::Function* ProtoAST::codegen(){
     //declare a function
     std::vector<Type*> Doubles(args.size(),Type::getDoubleTy(TheContext));
     //Define the funciton type:double take Doubles as args and return double
@@ -108,15 +108,15 @@ Function* ProtoAST::codegen(){
     return f;
 }
 
-Function* FunctionAST::codegen(){
-    Function * thefunc = TheModule->getFunction(proto->getName());
+llvm::Function* FunctionAST::codegen(){
+    llvm::Function * thefunc = TheModule->getFunction(proto->getName());
     //check if function has been declared somewhere
     if(!thefunc)
         thefunc = proto->codegen();
     if(!thefunc)
         return nullptr;
     if(!thefunc->empty())
-        return (Function*)LogErrorV("function can't be redefined");
+        return (llvm::Function*)LogErrorV("function can't be redefined");
     //create a basic block to start insertion into
     BasicBlock * bb = BasicBlock::Create(TheContext,"entry",thefunc);
     Builder.SetInsertionPoint(bb);
@@ -124,7 +124,7 @@ Function* FunctionAST::codegen(){
     NamedValues.clear();
     for(auto & arg : thefunc->args())
         NamedValues[arg.getName()] = &arg;
-    if(Value* retval = block->codegen()){
+    if(llvm::Value* retval = block->codegen()){
         //the return value is generated successfully
         Builder.CreateRet(retval);
         //check the consistency
@@ -136,16 +136,18 @@ Function* FunctionAST::codegen(){
     return nullptr;
 }
 
-Value* ProgramAST::codegen(){
-
+llvm::Value* ProgramAST::codegen(){
+    for(int i = 0;i<programStmts.size();i++)
+        programStmts[i]->codegen();
 }
 
-Value* BlockAST::codegen(){
-
+llvm::Value* BlockAST::codegen(){
+    for(int i=0;i<statements.size();i++)
+        statements[i]->codegen();
 }
 
-Value* IfAST::codegen(){
-    Value* condv = cond->codegen();
+llvm::Value* IfAST::codegen(){
+    llvm::Value* condv = cond->codegen();
     if(!condv)
         return nullptr;
     //convert condv into boolean by compare it with 0.0
@@ -160,7 +162,7 @@ Value* IfAST::codegen(){
     Builder.CreateCondBr(condv,thenb,elsebb);
     //emit then value
     Builder.SetInsertPoint(thenb);
-    Value* thenv = body->codegen();
+    llvm::Value* thenv = body->codegen();
     if(!thenv)
         return nullptr;
     Builder.CreateBr(Mergeb);
@@ -169,7 +171,7 @@ Value* IfAST::codegen(){
     //emit else block, similar with above
     thefunc->getBasicBlockList().push_back(elsebb);
     Builder.SetInsertPoint(elsebb);
-    Value* elsev = elsebody->codegen();
+    llvm::Value* elsev = elsebody->codegen();
     if(!elsev)
         return nullptr;
     Builder.CreateBr(Mergeb);
@@ -183,9 +185,9 @@ Value* IfAST::codegen(){
     return pn;
 }
 
-Value* ForcallAST::codegen(){
+llvm::Value* ForcallAST::codegen(){
     //initialize variable code generation
-    Value * initv = initVar->codegen();
+    llvm::Value * initv = initVar->codegen();
     if(!initv)
         return nullptr;
     //make new basic block for loop header
@@ -201,5 +203,42 @@ Value* ForcallAST::codegen(){
     PHINode * var = Builder.CreatePHI(Type::getDoubleTy(TheContext),2,initVar->getVarname().c_str());
     var->addIncoming(initv,preheaderbb);
     //within the loop save the old value and use new value to cover it 
-    Value * oldv = NamedValues[var]
+    llvm::Value * oldv = NamedValues[initVar->getVarname()];
+    NamedValues[initVar->getVarname()] = var;
+    if(!body->codegen())
+        return nullptr;
+    //emit the iterator value
+    llvm::Value * iterValue = nullptr;
+    if(iterValue){
+        iterValue = Iterator->codegen();
+        if(!iterValue)
+            return nullptr;
+    }else{
+        //if the iterator is not specified
+        iterValue = ConstantFP::get(TheContext,APFloat(1.0));
+    }
+    llvm::Value * nextVar = Builder.CreateFAdd(var,iterValue,"nextvar");
+    //compute the condition value
+    llvm::Value * condv = cond->codegen();
+    if(!condv)
+        return nullptr;
+    //convert it to a boolean
+    condv = Builder.CreateFCmpONE(condv,ConstantFP::get(TheContext,APFloat(0.0)),"loopcond");
+    //create the after loop block
+    BasicBlock * loopendbb = Bulilder.GetInsertBlock();
+    BasicBlock * afterbb = BasicBlock::Create(TheContext,"afterloop",thefunc);
+    //insert the conditional branch into the end of loopendbb
+    Builder.CreateCondBr(condv,loopbb,afterbb);
+    //set insert point to afterbb
+    Builder.SetInsertPoint(afterbb);
+    //add a new entry to the phi node for the backedge
+    //todo can't understand it...
+    var->addIncoming(nextVar,loopendbb);
+    //restore the unshadowed variable
+    if(oldv)
+        NamedValues[Iterator->getVarname()] = oldv;
+    else
+        NamedValues.erase(Iterator->getVarname());
+    //return 0.0
+    return Constant::getNullValue(Type::getDoubleTy(TheContext));
 }

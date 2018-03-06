@@ -15,25 +15,34 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
+
 #include <stdio.h>
 #include <string>
 #include <vector>
+//using namespace llvm;
+
 class ExprAST{
 public:
     virtual ~ExprAST(){}
-    virtual Value* codegen() = 0;
+    virtual llvm::Value* codegen() = 0;
 };
 
 class ProgramAST: public ExprAST{
     std::vector<ExprAST*> programStmts;
 public:
     ProgramAST(std::vector<ExprAST*> stmts):programStmts(stmts){}
-    Value* codegen() override;
+    llvm::Value* codegen() override;
 };
 
 class BlockAST: public ExprAST{
@@ -43,21 +52,21 @@ public:
     void addStmt(ExprAST* newast){
         statements.push_back(newast);
     }
-    Value* codegen() override;
+    llvm::Value* codegen() override;
 };
 
 class NumberAST: public ExprAST{
     int value;
 public:
     NumberAST(const int v):value(v){}
-    Value* codegen() override;
+    llvm::Value* codegen() override;
 };
 
 class VariableAST: public ExprAST{
     std::string name;
 public:
     VariableAST(const std::string & n):name(n){}
-    Value* codegen() override;
+    llvm::Value* codegen() override;
     std::string getName(){
         return name;
     }
@@ -69,7 +78,7 @@ class BinopAST: public ExprAST{
     ExprAST* lva,* rva; //store two number
 public:
     BinopAST(std::string o,ExprAST* l,ExprAST* r):op(o),lva(l),rva(r){}
-    Value* codegen() override;
+    llvm::Value* codegen() override;
 };
 
 //the prototype of function prototype:  funcname(args)
@@ -81,7 +90,7 @@ public:
     std::string getName(){
         return name;
     }
-    Function* codegen();
+    llvm::Function* codegen();
 };
 
 class FunctionAST: public ExprAST{
@@ -89,7 +98,7 @@ class FunctionAST: public ExprAST{
     BlockAST * block;
 public:
     FunctionAST(ProtoAST* p, BlockAST* b):proto(p),block(b){}
-    Function* codegen();
+    llvm::Function* codegen();
 };
 
 //AST to parse the function call
@@ -98,7 +107,7 @@ class CallfuncAST: public ExprAST{
     std::vector<ExprAST*> args; //define the parameters of function
 public:
     CallfuncAST(const std::string cal, std::vector<ExprAST*> &ar):callname(cal),args(ar){}
-    Value* codegen() override;
+    llvm::Value* codegen() override;
 };
 
 //AST to store while statement
@@ -108,7 +117,7 @@ class WhileAST: public ExprAST{
     ExprAST * body;
 public:
     WhileAST(ExprAST* c, ExprAST*b):cond(c),body(b){}
-    Value* codegen() override;
+    llvm::Value* codegen() override;
 };
 
 //AST to store if statement
@@ -119,7 +128,7 @@ class IfAST: public ExprAST{
     ExprAST * elsebody;
 public:
     IfAST(ExprAST* c,ExprAST* b,ExprAST* e):cond(c),body(b),elsebody(e){}
-    Value* codegen() override;
+    llvm::Value* codegen() override;
 };
 
 //AST to store for statement
@@ -130,7 +139,7 @@ class ForcallAST: public ExprAST{
     ExprAST * body;
 public:
     ForcallAST(ExprAST*init, ExprAST*c, ExprAST* it,ExprAST*bo):initVar(init),cond(c),Iterator(it),body(bo){}
-    Value* codegen() override;
+    llvm::Value* codegen() override;
 };
 
 //AST to store assignment

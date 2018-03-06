@@ -10,8 +10,8 @@
 #include <cctype>
 #include <sstream>
 #include <fstream>
-#ifndef scanner_h
-#define scanner_h
+#ifndef scanner_hpp
+#define scanner_hpp
 
 //tag of reserved keywords
 const int T_SET = 1, T_MAIN = 3, T_FOR = 4, T_IF = 5, T_ELSE = 6, T_RETURN = 7,T_TERMINATE = 8,T_WHILE = 9,T_DEF=10;
@@ -62,9 +62,8 @@ class Scanner{
 public:
     Scanner(){//push reserved words in table
         wordsTable.push_back(new Token(T_IF, "if"));
-        wordsTable.push_back(new Token(T_BOOL, "bool"));
+        wordsTable.push_back(new Token(T_SET, "set"));
         wordsTable.push_back(new Token(T_FOR, "for"));
-        wordsTable.push_back(new Token(T_INT, "int"));
         wordsTable.push_back(new Token(T_MAIN, "main"));
         wordsTable.push_back(new Token(T_RETURN, "return"));
         wordsTable.push_back(new Token(T_ELSE, "else"));

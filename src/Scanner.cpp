@@ -7,7 +7,7 @@
 //
 
 #include <stdio.h>
-#include "Scanner.h"
+#include "Scanner.hpp"
 
 bool Scanner::readNext(std::ifstream & infile, char c){
     infile>>ptr;

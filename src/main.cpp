@@ -8,8 +8,8 @@
 
 #include <iostream>
 #include <fstream>
-#include "Scanner.h"
-#include "Parser.hpp"
+#include "Scanner.hpp"
+//#include "Parser.hpp"
 
 int main(int argc, const char * argv[]) {
     // insert code here...
@@ -17,7 +17,8 @@ int main(int argc, const char * argv[]) {
     Scanner * scn = new Scanner();
     scn->scan(infile);
     scn->printToken();
-    Parser * parser = new Parser(scn->getList());
-    parser->parseProgram();
+    // Parser * parser = new Parser(scn->getList());
+    // auto asTree = parser->parseProgram();
+    // asTree->codegen();
     return 0;
 }
