@@ -11,7 +11,8 @@
 
 ExprAST* Parser::parseProgram(){
     std::vector<ExprAST*> stmts;
-    while (getToken() != NULL) {
+    while (!isEnd()) {
+        std::cout<<getToken()->getvalue()<<std::endl;
         stmts.push_back(parseState());
     }
     ExprAST* result = new ProgramAST(stmts);
@@ -146,6 +147,7 @@ CallfuncAST* Parser::parseFuncCall(){
         match(",");
     }
     match(")");
+   // std::cout<<getToken()->getvalue()<<std::endl;
     return new CallfuncAST(funcName,p_args);
 }
 

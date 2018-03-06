@@ -8,11 +8,6 @@
 
 #include "AST.hpp"
 
-static LLVMContext TheContext; 
-static IRBuilder<> Builder(TheContext); //help to generate instructions
-static llvm::Module* TheModule; //contains funcitons and global values
-static std::map<std::string, llvm::Value *> NamedValues; //a symbol table to track
-
 std::unique_ptr<ExprAST> LogError(const char *Str) {
   fprintf(stderr, "Error: %s\n", Str);
   return nullptr;
@@ -109,7 +104,10 @@ llvm::Function* ProtoAST::codegen(){
 }
 
 llvm::Function* FunctionAST::codegen(){
+    fprintf(stderr,"test\n");
+    fprintf(stderr,"%s",proto->getName().c_str());
     llvm::Function * thefunc = TheModule->getFunction(proto->getName());
+    fprintf(stderr,"test\n");
     //check if function has been declared somewhere
     if(!thefunc)
         thefunc = proto->codegen();

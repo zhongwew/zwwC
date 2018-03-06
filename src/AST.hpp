@@ -32,6 +32,12 @@
 #include <vector>
 using namespace llvm;
 
+
+static LLVMContext TheContext; 
+static IRBuilder<> Builder(TheContext); //help to generate instructions
+static llvm::Module* TheModule; //contains funcitons and global values
+static std::map<std::string, llvm::Value *> NamedValues; //a symbol table to track
+
 class ExprAST{
 public:
     virtual ~ExprAST(){}

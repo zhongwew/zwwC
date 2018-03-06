@@ -21,6 +21,11 @@ public:
         this->tokens = t;
         pos = 0;
     }
+    bool isEnd(){
+        if(pos==tokens.size())
+            return true;
+        return false;
+    }
     Token* readNext(){
         return tokens[pos+1];
     }
