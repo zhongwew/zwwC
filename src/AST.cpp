@@ -10,7 +10,7 @@
 
 static LLVMContext TheContext; 
 static IRBuilder<> Builder(TheContext); //help to generate instructions
-static std::unique_ptr<Module> TheModule; //contains funcitons and global values
+static llvm::Module* TheModule; //contains funcitons and global values
 static std::map<std::string, llvm::Value *> NamedValues; //a symbol table to track
 
 std::unique_ptr<ExprAST> LogError(const char *Str) {
@@ -30,7 +30,7 @@ llvm::Value* VariableAST::codegen(){
 }
 
 llvm::Value* NumberAST::codegen(){
-    return ConstantFP::get(TheContext,APFloat(this->getvalue())); //default to be float type
+    return ConstantFP::get(TheContext,APFloat(this->getValue())); //default to be float type
 }
 
 llvm::Value* BinopAST::codegen(){
@@ -49,31 +49,31 @@ llvm::Value* BinopAST::codegen(){
     else if(op == "%")
         return Builder.CreateFRem(lv,rv,"remtmp");
     else if(op == "<"){
-        L = Builder.CreateFCmpULT(lv,rv,"cmptmp");
-        return Builder.CreateUIToFP(L,Type::getDoubleTy(TheContext),"booltmp");
+        lv = Builder.CreateFCmpULT(lv,rv,"cmptmp");
+        return Builder.CreateUIToFP(lv,Type::getDoubleTy(TheContext),"booltmp");
     }
     else if(op == "<="){
-        L = Builder.CreateFCmpULE(lv,rv,"cmptmp");
-        return Builder.CreateUIToFP(L,Type::getDoubleTy(TheContext,"booltmp"));
+        lv = Builder.CreateFCmpULE(lv,rv,"cmptmp");
+        return Builder.CreateUIToFP(lv,Type::getDoubleTy(TheContext),"booltmp");
     }
     else if(op == ">"){
-        L = Builder.CreateFCmpUGT(lv,rv,"cmptmp");
-        return Builder.CreateUIToFP(L,Type::getDoubleTy(TheContext,"booltmp"));
+        lv = Builder.CreateFCmpUGT(lv,rv,"cmptmp");
+        return Builder.CreateUIToFP(lv,Type::getDoubleTy(TheContext),"booltmp");
     }
     else if(op == ">="){
-        L = Builder.CreateFCmpUGE(lv,rv,"cmptmp")
-        return Builder.CreateUIToFP(L,Type::getDoubleTy(TheContext,"booltmp"));
+        lv = Builder.CreateFCmpUGE(lv,rv,"cmptmp");
+        return Builder.CreateUIToFP(lv,Type::getDoubleTy(TheContext),"booltmp");
     }
     else if(op == "=="){
-        L = Builder.CreateFCmpUEQ(lv,rv,"cmptmp")
-        return Builder.CreateUIToFP(L,Type::getDoubleTy(TheContext,"booltmp"));
+        lv = Builder.CreateFCmpUEQ(lv,rv,"cmptmp");
+        return Builder.CreateUIToFP(lv,Type::getDoubleTy(TheContext),"booltmp");
     }
     else if(op == "!="){
-        L = Builder.CreateFCmpUNE(lv,rv,"cmptmp")
-        return Builder.CreateUIToFP(L,Type::getDoubleTy(TheContext,"booltmp"));
+        lv = Builder.CreateFCmpUNE(lv,rv,"cmptmp");
+        return Builder.CreateUIToFP(lv,Type::getDoubleTy(TheContext),"booltmp");
     }
     else 
-        return;
+        return nullptr;
 }
 
 llvm::Value* CallfuncAST::codegen(){
@@ -86,7 +86,7 @@ llvm::Value* CallfuncAST::codegen(){
         return LogErrorV("invalid parameters");
     std::vector<llvm::Value*> argV;
     for(unsigned int i = 0, e = args.size();i<e;i++){
-        argv.push_back(args[i]->codegen());
+        argV.push_back(args[i]->codegen());
         if(!argV.back())
             return nullptr; //confused...
     }
@@ -97,7 +97,7 @@ llvm::Function* ProtoAST::codegen(){
     //declare a function
     std::vector<Type*> Doubles(args.size(),Type::getDoubleTy(TheContext));
     //Define the funciton type:double take Doubles as args and return double
-    FunctionType * FT = FunctionType::(Type::getDoubleTy(TheContext),Doubles,false);
+    FunctionType * FT = FunctionType::get(Type::getDoubleTy(TheContext),Doubles,false);
     //create function
     Function * f = Function::Create(FT,Function::ExternalLinkage,name,TheModule);
     //set name for args
@@ -119,7 +119,7 @@ llvm::Function* FunctionAST::codegen(){
         return (llvm::Function*)LogErrorV("function can't be redefined");
     //create a basic block to start insertion into
     BasicBlock * bb = BasicBlock::Create(TheContext,"entry",thefunc);
-    Builder.SetInsertionPoint(bb);
+    Builder.SetInsertPoint(bb);
     //record the function args
     NamedValues.clear();
     for(auto & arg : thefunc->args())
@@ -136,9 +136,15 @@ llvm::Function* FunctionAST::codegen(){
     return nullptr;
 }
 
-llvm::Value* ProgramAST::codegen(){
-    for(int i = 0;i<programStmts.size();i++)
-        programStmts[i]->codegen();
+llvm::Function* ProgramAST::codegen(){
+    // for(int i = 0;i<programStmts.size();i++)
+    //     programStmts[i]->codegen();
+    //make an anonymous function
+    std::vector<std::string> tempStr;
+    auto proto = new ProtoAST("anonymous",tempStr);
+    BlockAST * tempb = new BlockAST(programStmts);
+    auto anoy_func = new FunctionAST(proto,tempb);
+    return anoy_func->codegen();
 }
 
 llvm::Value* BlockAST::codegen(){
@@ -188,6 +194,10 @@ llvm::Value* IfAST::codegen(){
 llvm::Value* ForcallAST::codegen(){
     //initialize variable code generation
     llvm::Value * initv = initVar->codegen();
+    DeclareAST* varPtr = dynamic_cast<DeclareAST*>(initVar);
+    AssignAST* itePtr = dynamic_cast<AssignAST*>(Iterator);
+    std::string varName = varPtr->getVarname();
+    std::string iteName = itePtr->getVarname();
     if(!initv)
         return nullptr;
     //make new basic block for loop header
@@ -200,11 +210,11 @@ llvm::Value* ForcallAST::codegen(){
     Builder.SetInsertPoint(loopbb);
     //start the phi node with an entry for start
     //todo incorrect
-    PHINode * var = Builder.CreatePHI(Type::getDoubleTy(TheContext),2,initVar->getVarname().c_str());
+    PHINode * var = Builder.CreatePHI(Type::getDoubleTy(TheContext),2,varName.c_str());
     var->addIncoming(initv,preheaderbb);
     //within the loop save the old value and use new value to cover it 
-    llvm::Value * oldv = NamedValues[initVar->getVarname()];
-    NamedValues[initVar->getVarname()] = var;
+    llvm::Value * oldv = NamedValues[varName];
+    NamedValues[varName] = var;
     if(!body->codegen())
         return nullptr;
     //emit the iterator value
@@ -225,7 +235,7 @@ llvm::Value* ForcallAST::codegen(){
     //convert it to a boolean
     condv = Builder.CreateFCmpONE(condv,ConstantFP::get(TheContext,APFloat(0.0)),"loopcond");
     //create the after loop block
-    BasicBlock * loopendbb = Bulilder.GetInsertBlock();
+    BasicBlock * loopendbb = Builder.GetInsertBlock();
     BasicBlock * afterbb = BasicBlock::Create(TheContext,"afterloop",thefunc);
     //insert the conditional branch into the end of loopendbb
     Builder.CreateCondBr(condv,loopbb,afterbb);
@@ -236,9 +246,42 @@ llvm::Value* ForcallAST::codegen(){
     var->addIncoming(nextVar,loopendbb);
     //restore the unshadowed variable
     if(oldv)
-        NamedValues[Iterator->getVarname()] = oldv;
+        NamedValues[iteName] = oldv;
     else
-        NamedValues.erase(Iterator->getVarname());
+        NamedValues.erase(iteName);
     //return 0.0
     return Constant::getNullValue(Type::getDoubleTy(TheContext));
+}
+
+llvm::Value* WhileAST::codegen(){
+}
+
+llvm::Value* DeclareAST::codegen(){
+    Value * tempv;
+    std::string varName = var->getName();
+    if(NamedValues[varName])
+        return LogErrorV("duplicate variable");
+    NamedValues[varName] = tempv;
+    //if has right value:emit the right value first
+    if(value){
+        Value* val = value->codegen();
+        if(!val)
+            return nullptr;
+        Builder.CreateStore(val,NamedValues[varName]);
+        return val;
+    }
+    return tempv;
+
+}
+
+llvm::Value* AssignAST::codegen(){
+    std::string varName = lst->getName();
+    if(NamedValues[varName])
+        return LogErrorV("duplicate variable");
+    Value* var = NamedValues[varName];
+    Value * rvalue = rst->codegen();
+    if(rvalue)
+        return nullptr;
+    Builder.CreateStore(rvalue,var);
+    return rvalue;
 }

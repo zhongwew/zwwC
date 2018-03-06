@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
-//using namespace llvm;
+using namespace llvm;
 
 class ExprAST{
 public:
@@ -42,7 +42,7 @@ class ProgramAST: public ExprAST{
     std::vector<ExprAST*> programStmts;
 public:
     ProgramAST(std::vector<ExprAST*> stmts):programStmts(stmts){}
-    llvm::Value* codegen() override;
+    llvm::Function* codegen() override;
 };
 
 class BlockAST: public ExprAST{
@@ -56,9 +56,12 @@ public:
 };
 
 class NumberAST: public ExprAST{
-    int value;
+    double value;
 public:
-    NumberAST(const int v):value(v){}
+    NumberAST(const double v):value(v){}
+    double getValue(){
+        return value;
+    }
     llvm::Value* codegen() override;
 };
 
@@ -95,9 +98,9 @@ public:
 
 class FunctionAST: public ExprAST{
     ProtoAST * proto;
-    BlockAST * block;
+    ExprAST * block;
 public:
-    FunctionAST(ProtoAST* p, BlockAST* b):proto(p),block(b){}
+    FunctionAST(ProtoAST* p, ExprAST* b):proto(p),block(b){}
     llvm::Function* codegen();
 };
 
@@ -145,10 +148,14 @@ public:
 //AST to store assignment
 
 class AssignAST: public ExprAST{
-    ExprAST* lst;
+    VariableAST* lst;
     ExprAST* rst;
 public:
-    AssignAST(ExprAST *l,ExprAST* r):lst(l),rst(r){}
+    AssignAST(VariableAST *l,ExprAST* r):lst(l),rst(r){}
+    std::string getVarname(){
+        return lst->getName();
+    }
+    llvm::Value* codegen();
 };
 
 class DeclareAST: public ExprAST{
@@ -160,6 +167,7 @@ public:
     std::string getVarname(){
         return var->getName();
     }
+    llvm::Value* codegen();
 };
 
 

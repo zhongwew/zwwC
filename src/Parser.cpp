@@ -149,8 +149,8 @@ ExprAST* Parser::parseDeclare(){
 
 //Def func_name(x,y) block
 ExprAST* Parser::parseDef(){
-    FunctionAST* result = NULL;
-    std::vector<ExprAST*> args;
+    ProtoAST* result = NULL;
+    std::vector<std::string> args;
     toNext(); //skip the def
     std::string name = getToken()->getvalue();
     toNext();
@@ -158,11 +158,11 @@ ExprAST* Parser::parseDef(){
     while(1){
         std::string newarg = getToken()->getvalue();
         args.push_back(newarg);
-        if(getToken->getvalue() == ")") break;
+        if(getToken()->getvalue() == ")") break;
         match(",");
     }
     match(")");
-    result = new ProgramAST(name,args);
+    result = new ProtoAST(name,args);
     match("{");
     ExprAST* blo = parseBlock();
     match("}");
@@ -327,7 +327,7 @@ VariableAST* Parser::parseVariable(){
 }
 
 NumberAST* Parser::parseNumber(){
-    NumberAST * number = new NumberAST(getToken()->getNumvalue());
+    NumberAST * number = new NumberAST((double)getToken()->getNumvalue());
     toNext();//move to next token
     return number;
 }
