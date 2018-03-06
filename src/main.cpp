@@ -11,6 +11,7 @@
 #include "Scanner.hpp"
 #include "Parser.hpp"
 
+
 int main(int argc, const char * argv[]) {
     // insert code here...
     std::ifstream infile("/Users/wang/Desktop/homework/zwwC/test.zc");
@@ -19,6 +20,6 @@ int main(int argc, const char * argv[]) {
     scn->printToken();
     Parser * parser = new Parser(scn->getList());
     auto asTree = parser->parseProgram();
-    // asTree->codegen();
+    asTree->codegen();
     return 0;
 }

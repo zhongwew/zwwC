@@ -31,7 +31,11 @@
         "ratio": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "exception": "cpp",
+        "new": "cpp",
+        "stdexcept": "cpp",
+        "utility": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "Enabled"
 }

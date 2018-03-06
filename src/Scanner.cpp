@@ -156,6 +156,10 @@ void Scanner::scan(std::ifstream & infile){
                 TokenList.push_back(new Token(T_TERMINATE,";"));
                 infile.get(ptr);
                 break;
+            case ',':
+                TokenList.push_back(new Token(T_COMMA,","));
+                infile.get(ptr);
+                break;
 
             default:
                 break;

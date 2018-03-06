@@ -64,6 +64,7 @@ ExprAST* Parser::parseState(){
             break;
         default:
             result = 0;
+            toNext();//skip the error
             break;
     }
     return result;
@@ -112,6 +113,7 @@ ExprAST* Parser::parseFor(){
     ForcallAST* result = new ForcallAST(init,cond,iter,body);
     return result;
 }
+
 ExprAST* Parser::parseReturn(){
     ExprAST * result = NULL;
     return result;
@@ -119,6 +121,10 @@ ExprAST* Parser::parseReturn(){
 
 //Assign-> Array = Bool;
 ExprAST* Parser::parseAssign(){
+    if(readNext()->getType() == T_L_RBRAC){
+        CallfuncAST* res = parseFuncCall();
+        return res;
+    }
     std::cout<<"parsing assign"<<std::endl;
     VariableAST* var = parseVariable();
     match("=");
@@ -126,6 +132,21 @@ ExprAST* Parser::parseAssign(){
     AssignAST *result = new AssignAST(var,boolexp);
    // match(";");
     return result;
+}
+
+CallfuncAST* Parser::parseFuncCall(){
+    std::string funcName = getToken()->getvalue();
+    toNext(); //skip the function name
+    match("(");
+    std::vector<ExprAST*> p_args;
+    while(1){
+        p_args.push_back(parseBool());
+       // toNext();//skip this arg
+        if(getToken()->getType()==T_R_RBRAC) break;
+        match(",");
+    }
+    match(")");
+    return new CallfuncAST(funcName,p_args);
 }
 
 
@@ -158,14 +179,15 @@ ExprAST* Parser::parseDef(){
     while(1){
         std::string newarg = getToken()->getvalue();
         args.push_back(newarg);
+        toNext();//skip this token
         if(getToken()->getvalue() == ")") break;
         match(",");
     }
     match(")");
     result = new ProtoAST(name,args);
-    match("{");
+    //match("{");
     ExprAST* blo = parseBlock();
-    match("}");
+    //match("}");
     ExprAST* res = new FunctionAST(result,blo);
     return res;
 }

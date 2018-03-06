@@ -46,6 +46,7 @@ public:
     ExprAST* parseDeclare();
     ExprAST* parseBlock();
     ExprAST* parseArray();
+    CallfuncAST* parseFuncCall();
     //parse different kinds of statements
     ExprAST* parseIF();
     ExprAST* parseWhile();
