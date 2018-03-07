@@ -21,7 +21,8 @@ llvm::Value *LogErrorV(const char *Str) {
 llvm::Value* VariableAST::codegen(){
     Value * v = NamedValues[name]; //check if variable has been define in the table
     if(!v) LogErrorV("unknown variable name");
-    return v;
+    //load the value into variable
+    return Builder.CreateLoad(v,name.c_str());
 }
 
 llvm::Value* NumberAST::codegen(){
@@ -104,10 +105,8 @@ llvm::Function* ProtoAST::codegen(){
 }
 
 llvm::Function* FunctionAST::codegen(){
-    fprintf(stderr,"test\n");
-    fprintf(stderr,"%s",proto->getName().c_str());
+    fprintf(stderr,"%s\n",this->getFuncname().c_str());
     llvm::Function * thefunc = TheModule->getFunction(proto->getName());
-    fprintf(stderr,"test\n");
     //check if function has been declared somewhere
     if(!thefunc)
         thefunc = proto->codegen();
@@ -120,8 +119,13 @@ llvm::Function* FunctionAST::codegen(){
     Builder.SetInsertPoint(bb);
     //record the function args
     NamedValues.clear();
-    for(auto & arg : thefunc->args())
-        NamedValues[arg.getName()] = &arg;
+    for(auto & arg : thefunc->args()){
+        //NamedValues[arg.getName()] = &arg;
+        AllocaInst* alloca = CreateEntryBlockAlloca(thefunc,arg.getName());
+        Builder.CreateStore(&arg,alloca);
+        NamedValues[arg.getName()] = alloca;
+    }
+
     if(llvm::Value* retval = block->codegen()){
         //the return value is generated successfully
         Builder.CreateRet(retval);
@@ -129,25 +133,37 @@ llvm::Function* FunctionAST::codegen(){
         verifyFunction(*thefunc);
         return thefunc;
     }
+
     //for the error case
     thefunc->eraseFromParent();
     return nullptr;
 }
 
 llvm::Function* ProgramAST::codegen(){
-    // for(int i = 0;i<programStmts.size();i++)
-    //     programStmts[i]->codegen();
+    //auto val;
+    for(int i = 0;i<programStmts.size();i++){
+        auto val = programStmts[i]->codegen();
+        val->print(errs());
+        fprintf(stderr,"\n");
+    }
     //make an anonymous function
-    std::vector<std::string> tempStr;
-    auto proto = new ProtoAST("anonymous",tempStr);
-    BlockAST * tempb = new BlockAST(programStmts);
-    auto anoy_func = new FunctionAST(proto,tempb);
-    return anoy_func->codegen();
+    // std::vector<std::string> tempStr;
+    // auto proto = new ProtoAST("_anonymous",tempStr);
+    // ExprAST * tempb = new BlockAST(programStmts);
+    // auto anoy_func = new FunctionAST(proto,tempb);
+    // return anoy_func->codegen();
+    return nullptr;
 }
 
 llvm::Value* BlockAST::codegen(){
-    for(int i=0;i<statements.size();i++)
-        statements[i]->codegen();
+    llvm::Value* val;
+    fprintf(stderr,"test\n");
+    for(int i=0;i<statements.size();i++){
+        val = statements[i]->codegen();
+        val->print(errs());
+        fprintf(stderr,"\n");
+    }
+    return val;
 }
 
 llvm::Value* IfAST::codegen(){
@@ -200,7 +216,9 @@ llvm::Value* ForcallAST::codegen(){
         return nullptr;
     //make new basic block for loop header
     Function* thefunc = Builder.GetInsertBlock()->getParent();
-    BasicBlock *preheaderbb = Builder.GetInsertBlock();
+    //create the variable for the entry block
+    AllocaInst* alloca = CreateEntryBlockAlloca(thefunc,varName);
+   //BasicBlock *preheaderbb = Builder.GetInsertBlock();
     BasicBlock * loopbb = BasicBlock::Create(TheContext,"loop",thefunc);
     //insert an explicit fall 
     Builder.CreateBr(loopbb);
@@ -208,13 +226,17 @@ llvm::Value* ForcallAST::codegen(){
     Builder.SetInsertPoint(loopbb);
     //start the phi node with an entry for start
     //todo incorrect
-    PHINode * var = Builder.CreatePHI(Type::getDoubleTy(TheContext),2,varName.c_str());
-    var->addIncoming(initv,preheaderbb);
+    //PHINode * var = Builder.CreatePHI(Type::getDoubleTy(TheContext),2,varName.c_str());
+    //var->addIncoming(initv,preheaderbb);
     //within the loop save the old value and use new value to cover it 
-    llvm::Value * oldv = NamedValues[varName];
-    NamedValues[varName] = var;
+    AllocaInst * oldv = NamedValues[varName];
+    NamedValues[varName] = alloca;
+
+
+    //emit the body of loop
     if(!body->codegen())
         return nullptr;
+
     //emit the iterator value
     llvm::Value * iterValue = nullptr;
     if(iterValue){
@@ -225,13 +247,22 @@ llvm::Value* ForcallAST::codegen(){
         //if the iterator is not specified
         iterValue = ConstantFP::get(TheContext,APFloat(1.0));
     }
-    llvm::Value * nextVar = Builder.CreateFAdd(var,iterValue,"nextvar");
+    //llvm::Value * nextVar = Builder.CreateFAdd(var,iterValue,"nextvar");
+
+
     //compute the condition value
     llvm::Value * condv = cond->codegen();
     if(!condv)
         return nullptr;
+
+    //reload, increament and restore the alloca
+    Value* curVal = Builder.CreateLoad(alloca,varName.c_str());
+    Value* newVal = Builder.CreateFAdd(curVal,iterValue,"nextvalue");
+    Builder.CreateStore(newVal,alloca);
     //convert it to a boolean
     condv = Builder.CreateFCmpONE(condv,ConstantFP::get(TheContext,APFloat(0.0)),"loopcond");
+
+
     //create the after loop block
     BasicBlock * loopendbb = Builder.GetInsertBlock();
     BasicBlock * afterbb = BasicBlock::Create(TheContext,"afterloop",thefunc);
@@ -241,12 +272,12 @@ llvm::Value* ForcallAST::codegen(){
     Builder.SetInsertPoint(afterbb);
     //add a new entry to the phi node for the backedge
     //todo can't understand it...
-    var->addIncoming(nextVar,loopendbb);
+    //var->addIncoming(nextVar,loopendbb);
     //restore the unshadowed variable
     if(oldv)
-        NamedValues[iteName] = oldv;
+        NamedValues[varName] = oldv;
     else
-        NamedValues.erase(iteName);
+        NamedValues.erase(varName);
     //return 0.0
     return Constant::getNullValue(Type::getDoubleTy(TheContext));
 }
@@ -255,30 +286,34 @@ llvm::Value* WhileAST::codegen(){
 }
 
 llvm::Value* DeclareAST::codegen(){
-    Value * tempv;
+    Function * thefunc = Builder.GetInsertBlock()->getParent();
+    Value * initValue;
     std::string varName = var->getName();
     if(NamedValues[varName])
         return LogErrorV("duplicate variable");
-    NamedValues[varName] = tempv;
     //if has right value:emit the right value first
     if(value){
-        Value* val = value->codegen();
-        if(!val)
+        initValue = value->codegen();
+        if(!initValue)
             return nullptr;
-        Builder.CreateStore(val,NamedValues[varName]);
-        return val;
+    }else{
+        initValue = ConstantFP::get(TheContext,APFloat(0.0));
     }
-    return tempv;
+    AllocaInst * alloca = CreateEntryBlockAlloca(thefunc,varName);
+    Builder.CreateStore(initValue,alloca);
+    NamedValues[varName] = alloca;
+    return initValue;
 
 }
 
 llvm::Value* AssignAST::codegen(){
+    //Function * thefunc = Builder.GetInsertBlock()->getParent();
     std::string varName = lst->getName();
-    if(NamedValues[varName])
-        return LogErrorV("duplicate variable");
+    if(!NamedValues[varName])
+        return LogErrorV("variable not defined");
     Value* var = NamedValues[varName];
     Value * rvalue = rst->codegen();
-    if(rvalue)
+    if(!rvalue)
         return nullptr;
     Builder.CreateStore(rvalue,var);
     return rvalue;

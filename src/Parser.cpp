@@ -188,7 +188,7 @@ ExprAST* Parser::parseDef(){
     match(")");
     result = new ProtoAST(name,args);
     //match("{");
-    ExprAST* blo = parseBlock();
+    ExprAST* blo = parseState();
     //match("}");
     ExprAST* res = new FunctionAST(result,blo);
     return res;

@@ -10,6 +10,7 @@
 #include <fstream>
 #include "Scanner.hpp"
 #include "Parser.hpp"
+#include "AST.hpp"
 
 
 int main(int argc, const char * argv[]) {
@@ -22,9 +23,9 @@ int main(int argc, const char * argv[]) {
     auto asTree = parser->parseProgram();
     // Make the module, which holds all the code.
     //TheModule = llvm::make_unique<Module>("my cool jit", TheContext);
-    TheModule = new llvm::Module("my cool jit", TheContext);
+    //TheModule = new llvm::Module("my cool jit", TheContext);
     asTree->codegen();
-    // Print out all of the generated code.
+    // Print out all of the generated code
     TheModule->print(errs(), nullptr);
     return 0;
 }

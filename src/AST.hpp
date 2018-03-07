@@ -35,8 +35,14 @@ using namespace llvm;
 
 static LLVMContext TheContext; 
 static IRBuilder<> Builder(TheContext); //help to generate instructions
-static llvm::Module* TheModule; //contains funcitons and global values
-static std::map<std::string, llvm::Value *> NamedValues; //a symbol table to track
+static llvm::Module* TheModule = new llvm::Module("my cool jit", TheContext); //contains funcitons and global values
+static std::map<std::string, AllocaInst *> NamedValues; //a symbol table to track
+//a helper function that ensure the alloca is created in block of function
+static AllocaInst* CreateEntryBlockAlloca(Function* thefunc,const std::string & varName){
+    IRBuilder<> TmpB(&thefunc->getEntryBlock(),thefunc->getEntryBlock().begin());
+    return TmpB.CreateAlloca(Type::getDoubleTy(TheContext),0,varName.c_str());
+}
+
 
 class ExprAST{
 public:
@@ -107,6 +113,9 @@ class FunctionAST: public ExprAST{
     ExprAST * block;
 public:
     FunctionAST(ProtoAST* p, ExprAST* b):proto(p),block(b){}
+    std::string getFuncname(){
+        return proto->getName();
+    }
     llvm::Function* codegen();
 };
 
