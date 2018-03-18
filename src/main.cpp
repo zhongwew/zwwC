@@ -15,7 +15,7 @@
 
 int main(int argc, const char * argv[]) {
     // insert code here...
-    std::ifstream infile("/Users/wang/Desktop/homework/zwwC/test.zc");
+    std::ifstream infile(argv[1]);
     Scanner * scn = new Scanner();
     scn->scan(infile);
     scn->printToken();

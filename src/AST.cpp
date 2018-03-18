@@ -157,7 +157,6 @@ llvm::Function* ProgramAST::codegen(){
 
 llvm::Value* BlockAST::codegen(){
     llvm::Value* val;
-    fprintf(stderr,"test\n");
     for(int i=0;i<statements.size();i++){
         val = statements[i]->codegen();
         val->print(errs());
@@ -186,7 +185,7 @@ llvm::Value* IfAST::codegen(){
     if(!thenv)
         return nullptr;
     Builder.CreateBr(Mergeb);
-    //todo what is phi? phi is a function choose the specific block for the control flow
+    //phi is a function choose the specific block for the control flow
     thenb = Builder.GetInsertBlock();
     //emit else block, similar with above
     thefunc->getBasicBlockList().push_back(elsebb);

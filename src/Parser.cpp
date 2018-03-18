@@ -81,7 +81,7 @@ ExprAST* Parser::parseIF(){
     ExprAST * body = parseState();
     if (getToken()->getType() == T_ELSE) {
         match("else");
-        ExprAST * elseb = parseBlock();
+        ExprAST * elseb = parseState();
         result = new IfAST(cond,body,elseb);
         return result;
     }
