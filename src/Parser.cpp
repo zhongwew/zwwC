@@ -18,6 +18,7 @@ ExprAST* Parser::parseProgram(){
     ExprAST* result = new ProgramAST(stmts);
     return result;
 }
+
 /*
  statement->:
  for(assign;bool;assign)
@@ -41,10 +42,10 @@ ExprAST* Parser::parseState(){
         case T_DEF:
             result = parseDef();
             break;
-        case T_RETURN:
-            result = parseReturn();
-            match(";");
-            break;
+        // case T_RETURN:
+        //     result = parseReturn();
+        //     match(";");
+        //     break;
         case T_L_BBRAC:
             result = parseBlock();
             break;
@@ -52,10 +53,11 @@ ExprAST* Parser::parseState(){
             result = parseDeclare();
             match(";");
             break;
-        // case T_BOOL:
-        //     result = parseDeclare();
-        //     match(";");
-        //     break;
+        case T_RETURN:
+            toNext();//skip the Return
+            result = parseBool();
+            match(";");
+            break;
         case T_ID:
             result = parseAssign();
             match(";");
@@ -312,6 +314,7 @@ ExprAST* Parser::parseTerm(){
     }
     return f;
 }
+
 ExprAST* Parser::parseLTerm(ExprAST*lvalue){
     std::string op = getToken()->getvalue();
     toNext();
@@ -323,6 +326,7 @@ ExprAST* Parser::parseLTerm(ExprAST*lvalue){
     }
     return result;
 }
+
 ExprAST* Parser::parseF(){
     ExprAST * result;
     switch (getToken()->getType()) {

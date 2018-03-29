@@ -10,6 +10,7 @@
 #define AST_hpp
 
 #include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
@@ -22,27 +23,31 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Host.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 
 #include <stdio.h>
 #include <string>
 #include <vector>
-using namespace llvm;
 
+using namespace llvm;
 
 static LLVMContext TheContext; 
 static IRBuilder<> Builder(TheContext); //help to generate instructions
-static llvm::Module* TheModule = new llvm::Module("my cool jit", TheContext); //contains funcitons and global values
+extern Module* TheModule; //contains funcitons and global values
 static std::map<std::string, AllocaInst *> NamedValues; //a symbol table to track
 //a helper function that ensure the alloca is created in block of function
 static AllocaInst* CreateEntryBlockAlloca(Function* thefunc,const std::string & varName){
     IRBuilder<> TmpB(&thefunc->getEntryBlock(),thefunc->getEntryBlock().begin());
     return TmpB.CreateAlloca(Type::getDoubleTy(TheContext),0,varName.c_str());
 }
-
 
 class ExprAST{
 public:

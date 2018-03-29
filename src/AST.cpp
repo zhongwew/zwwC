@@ -8,6 +8,8 @@
 
 #include "AST.hpp"
 
+Module* TheModule = new Module("my cool jit", TheContext);
+
 std::unique_ptr<ExprAST> LogError(const char *Str) {
   fprintf(stderr, "Error: %s\n", Str);
   return nullptr;
@@ -108,17 +110,20 @@ llvm::Function* FunctionAST::codegen(){
     fprintf(stderr,"%s\n",this->getFuncname().c_str());
     llvm::Function * thefunc = TheModule->getFunction(proto->getName());
     //check if function has been declared somewhere
+
     if(!thefunc)
         thefunc = proto->codegen();
     if(!thefunc)
         return nullptr;
     if(!thefunc->empty())
         return (llvm::Function*)LogErrorV("function can't be redefined");
+
     //create a basic block to start insertion into
     BasicBlock * bb = BasicBlock::Create(TheContext,"entry",thefunc);
     Builder.SetInsertPoint(bb);
     //record the function args
     NamedValues.clear();
+
     for(auto & arg : thefunc->args()){
         //NamedValues[arg.getName()] = &arg;
         AllocaInst* alloca = CreateEntryBlockAlloca(thefunc,arg.getName());
@@ -158,6 +163,7 @@ llvm::Function* ProgramAST::codegen(){
 llvm::Value* BlockAST::codegen(){
     llvm::Value* val;
     for(int i=0;i<statements.size();i++){
+        
         val = statements[i]->codegen();
         val->print(errs());
         fprintf(stderr,"\n");

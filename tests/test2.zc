@@ -1,0 +1,6 @@
+def testFunc(x,y){
+	if(y>x)
+		x = x+y;
+	else
+		y = y+10;
+}
