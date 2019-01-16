@@ -175,7 +175,7 @@ void Scanner::scan(std::ifstream & infile){
             }
             std::string str = tempstr.str();
             bool flag = 1;
-            for (int i = 0; i<wordsTable.size(); i++) {
+            for (unsigned int i = 0; i<wordsTable.size(); i++) {
                 if (wordsTable[i]->getvalue() == str) {
                     //the string equals to reserved word
                     TokenList.push_back(new Token(wordsTable[i]));
